@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<!-- SYNCHRON Standalone — Crafted by Saby · https://github.com/sabynextdoor
+     Hidden authorship watermark: SYNCHRON-STANDALONE|Crafted-by-Saby|sabynextdoor|2026
+     No build step, no server database, no real auth, no email, no payments. -->
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SYNCHRON — Academic Timetable & Clash Management</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<canvas id="bgCanvas" aria-hidden="true"></canvas>
+<div class="aurora" aria-hidden="true"></div>
+<header>
+  <div><div class="logo">SYN<span>CHRON</span></div><div class="tag" id="instLabel">Standalone · localStorage · no server</div></div>
+  <div class="row" style="margin-left:auto">
+    <div style="min-width:190px"><label style="margin:0">Role</label><div id="roleSelect"></div></div>
+    <button id="themeBtn" type="button">🌙 / ☀️ Theme</button>
+    <button id="demoBtn" type="button">Load demo institution</button>
+    <button id="clearBtn" type="button" class="danger">Clear all</button>
+  </div>
+</header>
+<main>
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <div id="permNote" class="card muted"></div>
+
+  <section class="view active" id="view-overview">
+    <h1>Overview</h1>
+    <p class="muted">A working timetable app that runs entirely in your browser. Data is saved in this browser's localStorage — no server, no separate database to install.</p>
+    <div class="grid" id="stats"></div>
+    <div class="card"><h2>Next sessions &amp; clashes</h2><div id="overviewDetail"></div></div>
+    <div class="card"><h2>Quick actions</h2><div class="row">
+      <button type="button" data-goto="timetable">Open timetable builder</button>
+      <button type="button" data-goto="clash">Open Clash Manager</button>
+      <button type="button" data-goto="personal">My Personal Timetable</button>
+      <button type="button" data-goto="checker">Clash Checker</button>
+      <button type="button" data-goto="auto">Auto Scheduler</button>
+    </div></div>
+    <div class="card"><h2>Analytics (from actual records)</h2><div id="analytics"></div></div>
+  </section>
+
+  <section class="view" id="view-timetable">
+    <h1>Timetable builder</h1>
+    <p class="muted">Drag a session card to another day/period. Every move is validated — a clash is rejected and explained, never silently saved.</p>
+    <div class="row">
+      <div style="min-width:200px"><label>View by section</label><div id="ttSection"></div></div>
+      <div style="min-width:200px"><label>View by faculty (optional)</label><div id="ttFaculty"></div></div>
+      <div style="min-width:200px"><label>View by room (optional)</label><div id="ttRoom"></div></div>
+      <button type="button" id="ttClearFilters">Clear filters</button>
+    </div>
+    <div id="ttGrid" class="tt card"></div>
+    <div class="card"><h2>Add / edit session</h2><p class="muted" id="sessionFormNote"></p>
+      <form id="sessionForm">
+        <div class="grid">
+          <div><label>Subject</label><div id="fSubject"></div></div>
+          <div><label>Faculty</label><div id="fFaculty"></div></div>
+          <div><label>Room</label><div id="fRoom"></div></div>
+          <div><label>Section</label><div id="fSection"></div></div>
+          <div><label>Day</label><div id="fDay"></div></div>
+          <div><label>Period</label><div id="fPeriod"></div></div>
+          <div><label>Type</label><div id="fType"></div></div>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="primary" type="submit">Save session (validated)</button><button type="button" id="sessionReset">New session</button></div>
+        <div id="sessionResult" style="margin-top:10px"></div>
+      </form>
+    </div>
+  </section>
+
+  <section class="view" id="view-clash">
+    <h1>Clash Manager</h1>
+    <p class="muted">Every clash below is computed from actual sessions by the same deterministic engine. Apply a suggestion only after it is revalidated.</p>
+    <div id="clashList"></div>
+  </section>
+
+  <section class="view" id="view-auto">
+    <h1>Auto Scheduler</h1>
+    <p class="muted">Constraint-based ranked-slot placement — never random. Slots are ranked morning-first, then fewer gaps, then balanced days. Unplaced sessions always get a reason.</p>
+    <div class="card"><div class="grid">
+      <div><label>Section</label><div id="autoSection"></div></div>
+      <div><label>Default room</label><div id="autoRoom"></div></div>
+    </div>
+    <p class="muted">Subjects are scheduled for their hours-per-week, using each subject's assigned faculty where set.</p>
+    <div class="row"><button class="primary" type="button" id="autoRun">Generate preview</button><button type="button" id="autoApply" disabled>Apply preview to timetable</button><button type="button" id="autoDiscard">Discard preview</button></div>
+    <div id="autoResult" style="margin-top:12px"></div></div>
+  </section>
+
+  <section class="view" id="view-faculty">
+    <h1>Faculty, Subjects, Rooms &amp; Sections</h1>
+    <div class="card"><h2>Add faculty</h2><form id="facultyForm" class="row"><input name="name" placeholder="Full name" required><input name="dept" placeholder="Department code (e.g. CSE)"><input name="maxLoad" type="number" min="1" value="12" style="max-width:130px"><button class="primary" type="submit">Add faculty</button></form><div id="facultyList"></div></div>
+    <div class="card"><h2>Add subject</h2><form id="subjectForm" class="row"><input name="code" placeholder="Code (CS501)" required><input name="name" placeholder="Subject name" required><input name="hours" type="number" min="1" value="3" style="max-width:110px"><button class="primary" type="submit">Add subject</button></form><div id="subjectList"></div></div>
+    <div class="card"><h2>Add room / lab</h2><form id="roomForm" class="row"><input name="name" placeholder="Room (CR-204)" required><input name="capacity" type="number" min="1" value="60" style="max-width:110px"><button class="primary" type="submit">Add room</button></form><div id="roomList"></div></div>
+    <div class="card"><h2>Add section</h2><form id="sectionForm" class="row"><input name="name" placeholder="Section (CSE-A)" required><input name="strength" type="number" min="1" value="50" style="max-width:110px"><button class="primary" type="submit">Add section</button></form><div id="sectionList"></div></div>
+    <div class="card"><h2>Departments</h2><form id="deptForm" class="row"><input name="name" placeholder="Department name" required><input name="code" placeholder="Code" required><button class="primary" type="submit">Add department</button></form><div id="deptList"></div></div>
+    <div class="card"><h2>CSV import / export</h2>
+      <div class="row"><div style="min-width:200px"><label>Import type</label><div id="importType"></div></div><button type="button" id="exportTimetable">Export timetable CSV</button><button type="button" id="exportAll">Export all data (JSON)</button></div>
+      <label>CSV rows — one per line. Faculty: name,deptCode,maxLoad. Subject: code,name,hours. Room: name,capacity. Section: name,strength.</label>
+      <textarea id="csvInput" rows="4" placeholder="Dr. Ananya Rao,CSE,12"></textarea>
+      <div class="row" style="margin-top:8px"><button class="primary" type="button" id="csvImport">Import CSV (validated)</button></div>
+      <div id="csvResult" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-rooms">
+    <h1>Rooms &amp; utilisation</h1>
+    <div id="roomUtil"></div>
+  </section>
+
+  <section class="view" id="view-personal">
+    <h1>My Personal Timetable <span class="badge">Student only to edit</span></h1>
+    <p class="muted">Start from your own section timetable as a read-only base, or from blank. Base sessions are marked BASE and can never be edited here — they belong to the institution. Your own sessions are private to this timetable in this browser.</p>
+    <div class="card"><div class="row">
+      <div style="min-width:220px"><label>Timetable</label><div id="personalSelect"></div></div>
+      <input id="personalName" placeholder="New timetable name" style="max-width:240px">
+      <button type="button" id="personalCreate">Create timetable</button>
+      <button type="button" id="personalExport">Export personal CSV</button>
+    </div>
+    <div class="row" style="margin-top:10px"><div style="min-width:220px"><label>Copy base from section</label><div id="personalBase"></div></div><button type="button" id="personalCopyBase">Copy section base</button></div></div>
+    <div id="personalGrid" class="tt card"></div>
+    <div class="card"><h2>Add my own session</h2><form id="personalForm"><div class="grid">
+      <div><label>Activity / subject name</label><input name="name" required placeholder="e.g. Self-study, CS501 revision"></div>
+      <div><label>Faculty / host</label><input name="host" placeholder="Optional"></div>
+      <div><label>Room / location</label><input name="room" placeholder="Optional"></div>
+      <div><label>Day</label><div id="pDay"></div></div>
+      <div><label>Period</label><div id="pPeriod"></div></div>
+      <div><label>Type</label><div id="pType"></div></div>
+    </div><div class="row" style="margin-top:12px"><button class="primary" type="submit">Add personal session (validated)</button></div><div id="personalResult" style="margin-top:8px"></div></form></div>
+    <div class="card"><h2>Free periods</h2><div id="personalFree"></div></div>
+  </section>
+
+  <section class="view" id="view-checker">
+    <h1>Clash Checker</h1>
+    <p class="muted">Same deterministic engine as the builder. A pass is only shown when no hard clash is found.</p>
+    <div class="card"><h2>Quick check</h2><form id="checkForm"><div class="grid">
+      <div><label>Subject</label><div id="cSubject"></div></div>
+      <div><label>Faculty</label><div id="cFaculty"></div></div>
+      <div><label>Room</label><div id="cRoom"></div></div>
+      <div><label>Section</label><div id="cSection"></div></div>
+      <div><label>Day</label><div id="cDay"></div></div>
+      <div><label>Period</label><div id="cPeriod"></div></div>
+    </div><div class="row" style="margin-top:12px"><button class="primary" type="submit">Check this session</button></div><div id="checkResult" style="margin-top:10px"></div></form></div>
+    <div class="card"><h2>Bulk check</h2><div class="row"><div style="min-width:220px"><label>Section to check</label><div id="bulkSection"></div></div><button type="button" id="bulkRun">Check all sessions in section</button><button type="button" id="bulkAll">Check whole timetable</button></div><div id="bulkResult" style="margin-top:10px"></div></div>
+  </section>
+
+  <section class="view" id="view-settings">
+    <h1>Settings &amp; institution setup</h1>
+    <div class="card"><form id="settingsForm"><div class="grid">
+      <div><label>Institution name</label><input name="name" id="setName"></div>
+      <div><label>Academic year</label><input name="year" id="setYear"></div>
+      <div><label>Periods per day</label><input name="periods" id="setPeriods" type="number" min="4" max="8"></div>
+      <div><label>Period length (minutes)</label><input name="minutes" id="setMinutes" type="number" min="30" max="120"></div>
+      <div><label>Start time</label><input name="start" id="setStart" type="time"></div>
+      <div><label>Lunch period</label><input name="lunch" id="setLunch" type="number" min="1" max="8"></div>
+    </div><div class="row" style="margin-top:12px"><button class="primary" type="submit">Save settings</button></div></form></div>
+    <div class="card"><h2>Background &amp; motion</h2>
+      <label><input type="checkbox" id="toggleBg" checked> Living background</label>
+      <label><input type="checkbox" id="toggleStars" checked> Starfield</label>
+      <label><input type="checkbox" id="toggleMotion"> Reduced motion (static background, no animation)</label>
+      <p class="muted">The background also respects your operating system's reduced-motion preference. Turning it on here is deliberate — it is not silently forced by the system.</p>
+    </div>
+    <div class="card"><h2>Out of scope (honest limits)</h2><p>No real authentication, email, push notifications, payments, PDF/Excel export, or external database. Roles are views with logic-level permissions in this browser only. Do not use role views as a security boundary for sensitive data.</p></div>
+  </section>
+</main>
+
+<nav class="dock" aria-label="Main navigation" id="dock"></nav>
+<div class="watermark" aria-hidden="true">Crafted by Saby · SYNCHRON</div>
+
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
