@@ -279,3 +279,12 @@ This project is watermarked for authorship. Runtime and build layers carry a hid
 Released under the MIT License — see LICENSE for details.
 
 Built with care by Saby · © 2026 SYNCHRON
+
+## Deploy on Vercel
+
+This is a static site — no build step, no server code.
+
+- Import the GitHub repo `sabynextdoor/SYNCHRON` into Vercel.
+- Framework Preset: Other. Build Command: (none). Output Directory: (root, `.`).
+- Or deploy the folder directly: `vercel` from this folder (static).
+- The live site serves `index.html` at the root, with `styles.css`, `app.js`, and `engine.js` alongside it. Data stays in the visitor's browser localStorage.
